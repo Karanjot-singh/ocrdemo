@@ -16,6 +16,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -27,6 +28,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
 import okhttp3.Call;
@@ -92,9 +95,12 @@ public class MainActivity extends AppCompatActivity {
         });
 
         sendButton.setOnClickListener(view -> {
-            Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.test_image); // replace with your own image
-            String base64Image = encodeToBase64(bitmap, Bitmap.CompressFormat.JPEG, 100);
-            sendImage(base64Image);
+
+            // Dummy Image
+//            Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.test_image); // replace with your own image
+//            String base64Image = encodeToBase64(bitmap, Bitmap.CompressFormat.JPEG, 100);
+//            sendImage(base64Image);
+            openFileChooser();
         });
     }
 
@@ -105,7 +111,7 @@ public class MainActivity extends AppCompatActivity {
         intent.setAction(Intent.ACTION_GET_CONTENT);
         startActivityForResult(intent, PICK_IMAGE_REQUEST);
     }
-
+    // Implement onActivityResult to receive the result of the Intent
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -125,6 +131,29 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+    private class NetworkTask extends AsyncTask<Void, Void, String> {
+        protected String doInBackground(Void... params) {
+            OkHttpClient client = new OkHttpClient();
+            Request request = new Request.Builder()
+                    .url("http://example.com/api")
+                    .build();
+            try {
+                Response response = client.newCall(request).execute();
+                return response.body().string();
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        protected void onPostExecute(String result) {
+            if (result != null) {
+                // Do something with the result
+            } else {
+                // Handle the error
+            }
+        }
+    }
 
     private void sendImage(String base64Image) {
         OkHttpClient client = new OkHttpClient();
@@ -132,12 +161,12 @@ public class MainActivity extends AppCompatActivity {
         MediaType mediaType = MediaType.parse("application/json");
         RequestBody requestBody = RequestBody.create(mediaType, "{\"image\": \"" + base64Image + "\"}");
         Request request = new Request.Builder()
-//                .url("@string/server_url")
-                .url("http://192.168.232.16:8000/ocr")
-//                .url("http://192.168.2320/ocr")
-
+//                .url("http://10.0.2.2:8000/ocr")
+//                .url("http://192.168.41.244:8000/ocr")
+                .url("http://192.168.3.74:8000/ocr")
                 .post(requestBody)
                 .build();
+//        Log.d("REQKARAN", String.valueOf(request));
 
         client.newCall(request).enqueue(new Callback() {
             @Override
@@ -171,13 +200,9 @@ public class MainActivity extends AppCompatActivity {
 
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                openFileChooser();
+                Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show();
+
             } else {
-                Log.d("KARAN", "grantResults.length: " + grantResults.length);
-                Log.d("KARAN", "grantResults[0] " + grantResults[0]);
-                Log.d("KARAN", "PG: " + PackageManager.PERMISSION_GRANTED);
-
-
                 Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show();
             }
         }
